@@ -1,7 +1,4 @@
 # Implement IPSS and stability selection methods
-"""
-The main function is select.
-"""
 
 import time
 import warnings
@@ -11,31 +8,24 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skglm.estimators import GeneralizedLinearEstimator, MCPRegression
 from skglm.penalties import SCAD
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import Lasso, LassoCV, lasso_path, LogisticRegression
 from sklearn.model_selection import KFold, train_test_split
 from sklearn.preprocessing import StandardScaler
-import xgboost as xgb
 
-from helpers import (check_response_type, compute_alphas, compute_efp_scores, compute_q_list, compute_qvalues, integrate, 
-	score_based_selection, selection, selector_and_args)
+from helpers import (check_response_type, compute_alphas, compute_efp_scores, compute_q_list, integrate, 
+	selection, selector_and_args)
 
 #--------------------------------
 # Main function
 #--------------------------------
-def select(X, y, ipss_args, ss_args, B=50, selector='l1', selector_args=None, n_alphas=None, standardize_X=None, center_y=None, n_jobs=1):
+def select(X, y, ipss_args, ss_args, B=50, n_alphas=25, selector='l1', selector_args=None, standardize_X=None, center_y=None, n_jobs=1):
 
 	# start timer
 	start = time.time()
 
 	p_full = X.shape[1]
 
-	if selector in ['l1', 'mcp', 'scad']:
-		selector_type = 'regularization'
-	else:
-		selector_type = 'thresholding'
-
-	output = compute_stability_paths(X, y, selector_type=selector_type, selector=selector, selector_args=selector_args, 
+	output = compute_stability_paths(X, y, selector=selector, selector_args=selector_args, 
 		B=B, n_alphas=n_alphas, standardize_X=standardize_X, center_y=center_y, n_jobs=n_jobs)
 
 	stability_paths = output['stability_paths']
@@ -165,13 +155,12 @@ def scadcv(X, y, true_features, gamma=3.7, cv=5):
 			tp += 1
 		else:
 			fp += 1
-
 	return tp, fp
 
 #--------------------------------
 # Compute stability paths
 #--------------------------------
-def compute_stability_paths(X, y, selector_type='thresholding', selector='gb', selector_args=None, 
+def compute_stability_paths(X, y, selector='l1', selector_args=None, 
 	B=None, n_alphas=None, standardize_X=None, center_y=None, n_jobs=1):
 
 	# empty set for selector args if none specified
@@ -188,33 +177,26 @@ def compute_stability_paths(X, y, selector_type='thresholding', selector='gb', s
 	binary_response, selector = check_response_type(y, selector)
 
 	# standardize and center data if using l1 selectors
-	if selector_type == 'regularization':
-		if standardize_X is None:
-			X = StandardScaler().fit_transform(X)
-		if center_y is None:
-			if not binary_response:
-				y -= np.mean(y)
+	if standardize_X is None:
+		X = StandardScaler().fit_transform(X)
+	if center_y is None:
+		if not binary_response:
+			y -= np.mean(y)
 	
 	# dimensions
 	n, p = X.shape
 	
 	# maximum number of features for l1 regularized selectors (to avoid computational issues)
-	max_features = 0.75 * p if selector_type == 'regularization' else None
+	max_features = 0.75 * p
 
 	# alphas
-	if n_alphas is None:
-		n_alphas = 25 if selector_type == 'regularization' else 100
-	alphas = compute_alphas(X, y, n_alphas, max_features, binary_response) if selector_type == 'regularization' else None
+	alphas = compute_alphas(X, y, n_alphas, max_features, binary_response)
 
 	# selector function and args
 	selector_function, selector_args = selector_and_args(selector, selector_args)
 
 	# estimate selection probabilities
 	results = np.array(Parallel(n_jobs=n_jobs)(delayed(selection)(X, y, alphas, selector_function, **selector_args) for _ in range(B)))
-
-	# score-based selection
-	if alphas is None:
-		results, alphas = score_based_selection(results, n_alphas)
 
 	# aggregate results
 	Z = np.zeros((n_alphas, 2*B, p))

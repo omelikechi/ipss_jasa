@@ -42,7 +42,7 @@ response_type = 'linear_reg'
 df = False
 
 # Number of trials to run
-n_trials = 10
+n_trials = 5
 
 # Simulation parameters
 """
@@ -68,7 +68,7 @@ methods_to_run = ['ipss', 'ss', 'lassocv', 'mcpcv', 'scadcv']
 """
 Choices: 'l1' (for lasso), 'mcp', or 'scad'
 """
-selector = 'l1'
+selector = 'mcp'
 
 # Simulation name
 if feature_matrix == 0:
@@ -253,8 +253,8 @@ def run_simulation(simulation_config):
 		else:
 			ss_results = {}
 
-	end = time.time()
-	print(f'The simulation took {end - start:.1f} seconds')
+	runtime = time.time() - start
+	print(f'Simulation time: {runtime:.1f} seconds ({runtime/n_trials:.1f} s/trial)')
 	print(f'')
 
 	return {'ipss_results': ipss_results, 'ss_results': ss_results, 'lassocv_results':lassocv_results, 

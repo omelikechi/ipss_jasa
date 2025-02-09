@@ -9,11 +9,9 @@ from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import IntVector, FloatVector, StrVector, BoolVector, NULL
 stabs = importr('stabs')
 
-from base_selectors import fit_gb_classifier, fit_gb_regressor
-from base_selectors import fit_l1_classifier, fit_l1_regressor
-from base_selectors import fit_rf_classifier, fit_rf_regressor 
-from base_selectors import fit_mcp_regressor, fit_scad_regressor
+from base_selectors import fit_l1_classifier, fit_l1_regressor, fit_mcp_regressor, fit_scad_regressor
 
+# Check if response is binary
 def check_response_type(y, selector):
 	unique_values = np.unique(y)
 	if len(unique_values) == 1:
@@ -25,12 +23,9 @@ def check_response_type(y, selector):
 		y = np.where(y == minval, 0, 1)
 	if selector == 'l1':
 		selector = 'logistic_regression' if binary_response else 'lasso'
-	elif selector == 'rf':
-		selector = 'rf_classifier' if binary_response else 'rf_regressor'
-	elif selector == 'gb':
-		selector = 'gb_classifier' if binary_response else 'gb_regressor'
 	return binary_response, selector
 
+# Compute grid of regularization parameters
 def compute_alphas(X, y, n_alphas, max_features, binary_response=False):
 	n, p = X.shape
 	if binary_response:
@@ -64,15 +59,7 @@ def compute_alphas(X, y, n_alphas, max_features, binary_response=False):
 	alphas = np.logspace(np.log10(alpha_max), np.log10(alpha_min), n_alphas)
 	return alphas
 
-def compute_correlation(X):
-	corr_matrix = np.corrcoef(X, rowvar=False)
-	abs_corr_matrix = np.abs(corr_matrix)
-	np.fill_diagonal(abs_corr_matrix, 0)
-	avg_correlation = np.mean(np.mean(abs_corr_matrix, axis=1))
-	max_correlations = np.max(abs_corr_matrix, axis=1)
-	avg_max_correlation = np.mean(max_correlations)
-	return avg_correlation, avg_max_correlation
-
+# Compute efp scores for each feature
 def compute_efp_scores(stability_paths, B, alphas, average_selected, ipss_function, delta, cutoff):
 	n_alphas, p = stability_paths.shape
 	if ipss_function not in ['h1', 'h2', 'h3']:
@@ -101,7 +88,6 @@ def compute_efp_scores(stability_paths, B, alphas, average_selected, ipss_functi
 		for j in range(stop_index):
 			values[j] = h_m(stability_paths[j,i])
 		scores[i], _ = integrate(values, alphas_stop, delta)
-
 	return scores, integral, alphas, stop_index
 
 # construct list of average number of features selected cutoffs
@@ -115,20 +101,7 @@ def compute_q_list(efp_list, tau, method, p, B, sampling_type='SS'):
 			q_list.append(q)
 	return q_list
 
-def compute_qvalues(efp_scores):
-	T = list(efp_scores.values())
-	fdrs = []
-	for t in T:
-		efp_scores_leq_t = [score for score in efp_scores.values() if score <= t]
-		FP = max(efp_scores_leq_t)
-		S = len(efp_scores_leq_t)
-		fdrs.append((t, FP/S))
-	q_values = {
-		feature: min(fdr for t, fdr in fdrs if score <= t)
-		for feature, score in efp_scores.items()
-	}
-	return q_values
-
+# numerically evaluate integrals
 def integrate(values, alphas, delta=1, cutoff=None):
 	n_alphas = len(alphas)
 	a = min(alphas)
@@ -155,32 +128,12 @@ def integrate(values, alphas, delta=1, cutoff=None):
 				output = updated_output
 	return output, stop_index
 
-def score_based_selection(results, n_alphas):
-	alpha_min = np.min(results)
-	if alpha_min < 0:
-		results += np.abs(alpha_min)
-	alpha_max = np.max(results) + .01
-	alpha_min = alpha_max / 1e8
-	alphas = np.logspace(np.log10(alpha_max), np.log10(alpha_min), n_alphas)
-	B, _, p = results.shape
-
-	reshape_results = np.empty((B, n_alphas, 2, p))
-	for i in range(n_alphas):
-		reshape_results[:,i,:,:] = results
-	results = reshape_results
-	for i, alpha in enumerate(alphas):
-		for b in range(B):
-			for j in range(2):
-				results[b,i,j,:] = (results[b,i,j,:] > alpha).astype(int)
-	return results, alphas
-
 # subsampler for estimating selection probabilities
 def selection(X, y, alphas, selector, **kwargs):
 	n, p = X.shape
 	indices = np.arange(n)
 	np.random.shuffle(indices)
 	n_split = int(len(indices) / 2)
-
 	if alphas is None:
 		indicators = np.empty((2,p))
 		for half in range(2):
@@ -191,28 +144,23 @@ def selection(X, y, alphas, selector, **kwargs):
 		for half in range(2):
 			idx = indices[:n_split] if half == 0 else indices[n_split:]
 			indicators[:, half, :] = np.array(selector(X[idx,:], y[idx], alphas, **kwargs))
-
 	return indicators
 
+# default arguments for the base estimators
 def selector_and_args(selector, selector_args):
-	selectors = {'gb_classifier':fit_gb_classifier, 'gb_regressor':fit_gb_regressor, 'logistic_regression':fit_l1_classifier,
-		'lasso':fit_l1_regressor, 'mcp':fit_mcp_regressor, 'rf_classifier':fit_rf_classifier, 'rf_regressor':fit_rf_regressor, 
-		'scad':fit_scad_regressor}
+	selectors = {'logistic_regression':fit_l1_classifier, 'lasso':fit_l1_regressor, 'mcp':fit_mcp_regressor, 'scad':fit_scad_regressor}
 	if selector in selectors:
 		selector_function = selectors[selector]
 		if selector == 'logistic_regression' and not selector_args:
 			# selector_args = {'penalty': 'l1', 'solver':'liblinear', 'tol': 1e-3, 'class_weight': 'balanced'}
 			selector_args = {'penalty': 'l1', 'solver':'saga', 'tol': 1e-3, 'warm_start': True, 'class_weight': 'balanced'}
-		elif selector in ['gb_classifier', 'gb_regressor'] and not selector_args:
-			selector_args = {'max_depth':1, 'colsample_bynode':1/3, 'n_estimators':100, 'importance_type':'gain'}
-		elif selector in ['rf_classifier', 'rf_regressor'] and not selector_args:
-			selector_args = {'max_features':1/10, 'n_estimators':50}
 		else:
 			selector_args = {}
 	else:
 		selector_function = selector
 	return selector_function, selector_args
 
+# compute expected number of selected features, q, for stability selection methods
 def stabsel_q(p, cutoff, PFER, B=50, assumption='unimodal', sampling_type='SS', verbose=False):
 	p_r = IntVector([p])
 	cutoff_r = FloatVector([cutoff])
@@ -231,9 +179,9 @@ def stabsel_q(p, cutoff, PFER, B=50, assumption='unimodal', sampling_type='SS', 
 	
 	# Extract the value of q from the result
 	q = int(result.rx2('q')[0])
-	
 	return q
 
+# compute the number of true and false positives
 def tps_and_fps(efp_scores, efp_list, true_features):
 	tps, fps = [], []
 	for efp in efp_list:
