@@ -1,4 +1,4 @@
-# Supplementary Code for "Integrated Path Stability Selection," submitted to JASA
+# Supplementary code for "Integrated Path Stability Selection," submitted to JASA
 
 `main.py` implements Integrated Path Stability Selection (IPSS) as well as stability selection and cross-validation methods used for comparison.  
 `helpers.py` contains helper functions for `main.py`.  
