@@ -12,8 +12,7 @@ from sklearn.linear_model import Lasso, LassoCV, lasso_path, LogisticRegression
 from sklearn.model_selection import KFold, train_test_split
 from sklearn.preprocessing import StandardScaler
 
-from helpers import (check_response_type, compute_alphas, compute_efp_scores, compute_q_list, integrate, 
-	selection, selector_and_args)
+from helpers import check_response_type, compute_alphas, compute_efp_scores, compute_q_list, selection, selector_and_args
 
 #--------------------------------
 # Main function
@@ -35,43 +34,49 @@ def select(X, y, ipss_args, ss_args, B=50, n_alphas=25, selector='l1', selector_
 	n_alphas, p = stability_paths.shape
 
 	# ipss
-	function_list = ipss_args['function_list']
-	cutoff_list = ipss_args['cutoff_list']
-	delta_list = ipss_args['delta_list']
-	ipss_efp_scores_list = {function:{cutoff:{delta: [] for delta in delta_list} for cutoff in cutoff_list} for function in function_list}
+	if ipss_args is not None:
+		function_list = ipss_args['function_list']
+		cutoff_list = ipss_args['cutoff_list']
+		delta_list = ipss_args['delta_list']
+		ipss_efp_scores_list = {function:{cutoff:{delta: [] for delta in delta_list} for cutoff in cutoff_list} for function in function_list}
 
-	for function in function_list:
-		for cutoff in cutoff_list:
-			for delta in delta_list:
-				scores, integral, alphas, stop_index = compute_efp_scores(stability_paths, B, alphas, average_selected, function, delta, cutoff)
-				efp_scores = np.round(integral / np.maximum(scores, integral / p), decimals=8)
-				efp_scores = dict(zip(np.arange(p), efp_scores))
-				ipss_efp_scores_list[function][cutoff][delta] = efp_scores
+		for function in function_list:
+			for cutoff in cutoff_list:
+				for delta in delta_list:
+					scores, integral, alphas, stop_index = compute_efp_scores(stability_paths, B, alphas, average_selected, function, delta, cutoff)
+					efp_scores = np.round(integral / np.maximum(scores, integral / p), decimals=8)
+					efp_scores = dict(zip(np.arange(p), efp_scores))
+					ipss_efp_scores_list[function][cutoff][delta] = efp_scores
+	else:
+		ipss_efp_scores_list = {}
 
 	# stability selection
-	assumption_list = ss_args['assumption_list']
-	efp_list = ss_args['efp_list']
-	tau_list = ss_args['tau_list']
-	q_list = ss_args['q_list']
-	ss_efp_scores_list = {assumption: {tau: [] for tau in tau_list} for assumption in assumption_list}
-	for assumption in assumption_list:
-		for tau in tau_list:
-			efp_scores = p * np.ones(p)
-			already_selected = []
-			for idx, efp in enumerate(efp_list):
-				if efp == 0:
-					continue
-				q = q_list[assumption][tau][idx]
-				stop_index = max(np.argmin(np.abs(average_selected - q)), 1)
-				stop_index = min(stop_index, n_alphas)
-				stability_scores = np.max(stability_paths[:stop_index, :], axis=0)
-				for j in range(p):
-					if stability_scores[j] >= tau and j not in already_selected:
-						efp_scores[j] = efp
-						already_selected.append(j)
+	if ss_args is not None:
+		assumption_list = ss_args['assumption_list']
+		efp_list = ss_args['efp_list']
+		tau_list = ss_args['tau_list']
+		q_list = ss_args['q_list']
+		ss_efp_scores_list = {assumption: {tau: [] for tau in tau_list} for assumption in assumption_list}
+		for assumption in assumption_list:
+			for tau in tau_list:
+				efp_scores = p * np.ones(p)
+				already_selected = []
+				for idx, efp in enumerate(efp_list):
+					if efp == 0:
+						continue
+					q = q_list[assumption][tau][idx]
+					stop_index = max(np.argmin(np.abs(average_selected - q)), 1)
+					stop_index = min(stop_index, n_alphas)
+					stability_scores = np.max(stability_paths[:stop_index, :], axis=0)
+					for j in range(p):
+						if stability_scores[j] >= tau and j not in already_selected:
+							efp_scores[j] = efp
+							already_selected.append(j)
 
-			efp_scores = dict(zip(np.arange(p), efp_scores))
-			ss_efp_scores_list[assumption][tau] = efp_scores
+				efp_scores = dict(zip(np.arange(p), efp_scores))
+				ss_efp_scores_list[assumption][tau] = efp_scores
+	else:
+		ss_efp_scores_list = {}
 
 	runtime = time.time() - start
 
@@ -167,7 +172,10 @@ def compute_stability_paths(X, y, selector='l1', selector_args=None,
 	selector_args = selector_args or {}
 
 	# number of subsamples
-	B = B if B is not None else 100 if selector == 'gb' else 50
+	B = B if B is not None else 50
+
+	# number of alphas
+	n_alphas = n_alphas if n_alphas is not None else 25
 
 	# reshape response
 	if len(y.shape) > 1:

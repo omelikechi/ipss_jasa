@@ -1,33 +1,33 @@
 # Simulation experiments
 """
-Run the simulation experiments, as described in Section 5 of "Integrated path stability selection"
+Run the simulation experiments, as described in Section 5. This is the base code used 
+to produce Figures 3, 4, and 5 in the main text and Figures S1 through S25 in the 
+Supplement. In particular, this code can be used to run both the primary simulation 
+results (Section 5 and S7) as well as the sensitivity analyses (Section S8).
+
+Runtime: Running 100 trials takes between 10 minutes and 2 hours depending upon the
+dimension, p, and the base selector (lasso, SCAD, MCP, or logistic regression)
 """ 
 
 import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pickle
 
-from helpers import compute_q_list, tps_and_fps
-from main import lassocv, mcpcv, scadcv, select
-from simulations.generate_data import generate_data
-
-#--------------------------------
-# Simulation parameters
-#--------------------------------
-
-plot_stability_paths = False
+from simulations.simulation_function import run_simulation
 
 # Set random seed
 random_seed = 302
 np.random.seed(random_seed)
 
+#--------------------------------
+# Simulation parameters
+#--------------------------------
 # Feature design
 """
 feature_matrix = 0: Standard normal
 feature_matrix in (0, 1): Multivariate Gaussian with Toeplitz covariance matrix and correlation strength = feature_matrix
-feature_matrix = np.load('ovarian_rnaseq.npy') for RNA-seq features from ovarian cancer patients
+feature_matrix = np.load('./simulations/ovarian_rnaseq.npy') for RNA-seq features from ovarian cancer patients
 """
 feature_matrix = 0.5
 
@@ -42,7 +42,7 @@ response_type = 'linear_reg'
 df = False
 
 # Number of trials to run
-n_trials = 5
+n_trials = 100
 
 # Simulation parameters
 """
@@ -63,18 +63,22 @@ efp_list = np.linspace(0, 5, 21)
 
 # Methods to run
 methods_to_run = ['ipss', 'ss', 'lassocv', 'mcpcv', 'scadcv']
+if response_type == 'linear_class':
+	if 'mcpcv' in methods_to_run or 'scadcv' in methods_to_run:
+		print(f'Warning: MCPCV and SCADCV are not compatible with logistic regression.')
 
 # Base estimator
 """
 Choices: 'l1' (for lasso), 'mcp', or 'scad'
 """
-selector = 'mcp'
+selector = 'l1'
 
 # Simulation name
-if feature_matrix == 0:
-	simulation_name = f'independent_{response_type}_{p}'
-elif np.isscalar(feature_matrix) and 0 < feature_matrix <= 1:
-	simulation_name = f'toeplitz_{feature_matrix}_{response_type}_{p}'
+if isinstance(feature_matrix, (int, float)):
+	if feature_matrix == 0:
+		simulation_name = f'independent_{response_type}_{p}'
+	elif np.isscalar(feature_matrix) and 0 < feature_matrix <= 1:
+		simulation_name = f'toeplitz_{feature_matrix}_{response_type}_{p}'
 else:
 	simulation_name = f'oc_rnaseq_{response_type}_{p}'
 if df:
@@ -86,16 +90,17 @@ if selector == 'scad':
 
 # Store simulation details
 simulation_config = {
-	'simulation_name': simulation_name,
-	'response_type': response_type,
-	'feature_matrix': feature_matrix,
-	'n_trials': n_trials,
-	'p': p,
-	'n_range': n_range,
-	'p_true_range': p_true_range,
-	'snr_range': snr_range,
-	'efp_list': efp_list,
-	'random_seed': random_seed,
+	'simulation_name':simulation_name,
+	'response_type':response_type,
+	'feature_matrix':feature_matrix,
+	'n_trials':n_trials,
+	'p':p,
+	'n_range':n_range,
+	'p_true_range':p_true_range,
+	'snr_range':snr_range,
+	'efp_list':efp_list,
+	'random_seed':random_seed,
+	'methods_to_run':methods_to_run
 }
 
 #--------------------------------
@@ -116,149 +121,18 @@ if 'ipss' in methods_to_run or 'ss' in methods_to_run:
 	# stability selection
 	assumption_list = ['none', 'unimodal', 'r-concave']
 	tau_list = [0.6, 0.75, 0.9]
-	q_list = {assumption: {tau: [] for tau in tau_list} for assumption in assumption_list}
-	for assumption in assumption_list:
-		for tau in tau_list:
-			q_list[assumption][tau] = compute_q_list(efp_list, tau, method=assumption, p=p, B=select_args['B'])
+	# q_list = {assumption: {tau: [] for tau in tau_list} for assumption in assumption_list}
+	# for assumption in assumption_list:
+	# 	for tau in tau_list:
+	# 		q_list[assumption][tau] = compute_q_list(efp_list, tau, method=assumption, p=p, B=select_args['B'])
 
 	ss_args = {
 		'assumption_list': assumption_list,
 		'efp_list': efp_list,
-		'q_list': q_list,
+		# 'q_list': q_list,
 		'tau_list': tau_list
 		}
 	simulation_config['ss_args'] = ss_args
-
-#--------------------------------
-# Simulation function
-#--------------------------------
-def run_simulation(simulation_config):
-
-	start = time.time()
-
-	simulation_name = simulation_config['simulation_name']
-
-	response_type = simulation_config['response_type']
-	feature_matrix = simulation_config['feature_matrix']
-	n_trials = simulation_config['n_trials']
-	p = simulation_config['p']
-	n_range = simulation_config['n_range']
-	snr_range = simulation_config['snr_range']
-	p_true_range = simulation_config['p_true_range']
-	efp_list = simulation_config['efp_list']
-	random_seed = simulation_config['random_seed']
-
-	# ipss results dict
-	if 'ipss' in methods_to_run:
-		function_list = ipss_args['function_list']
-		cutoff_list = ipss_args['cutoff_list']
-		delta_list = ipss_args['delta_list']
-		ipss_results = {function:{cutoff:{delta: {'tp_list': np.zeros_like(efp_list), 'fp_list': np.zeros_like(efp_list)}
-			for delta in delta_list} for cutoff in cutoff_list} for function in function_list}
-
-	# ss results dict
-	if 'ss' in methods_to_run:
-		assumption_list = ss_args['assumption_list']
-		tau_list = ss_args['tau_list']
-		ss_results = {assumption:{tau: {'tp_list': np.zeros_like(efp_list), 'fp_list': np.zeros_like(efp_list)} 
-			for tau in tau_list} for assumption in assumption_list}
-
-	# lassocv results
-	if 'lassocv' in methods_to_run:
-		lassocv_results = {'tp': 0, 'fp': 0}
-
-	# mcp results
-	if 'mcpcv' in methods_to_run:
-		mcpcv_results = {'tp': 0, 'fp': 0}
-
-	# scad results
-	if 'scadcv' in methods_to_run:
-		scadcv_results = {'tp': 0, 'fp': 0}
-
-	for trial in range(n_trials):
-
-		print(f'trial {trial + 1}/{n_trials}')
-
-		# Update random seed
-		trial_seed = random_seed + trial
-
-		# choose parameters
-		n = np.random.randint(n_range[0], n_range[1] + 1)
-		p_true = np.random.randint(p_true_range[0], p_true_range[1] + 1)
-		snr = np.random.uniform(snr_range[0], snr_range[1])
-
-		# Generate data
-		X, y, true_features = generate_data(n, p, p_true, snr, response_type, feature_matrix, df=df, random_seed=trial_seed)
-
-		# lassocv
-		if 'lassocv' in methods_to_run:
-			tp, fp = lassocv(X, y, true_features)
-			lassocv_results['fp'] += fp / n_trials
-			lassocv_results['tp'] += tp / n_trials
-		else:
-			lassocv_results = {}
-
-		# mcpcv
-		if 'mcpcv' in methods_to_run:
-			tp, fp = mcpcv(X, y, true_features)
-			mcpcv_results['fp'] += fp / n_trials
-			mcpcv_results['tp'] += tp / n_trials
-		else:
-			mcpcv_results = {}
-
-		# scadcv
-		if 'scadcv' in methods_to_run:
-			tp, fp = scadcv(X, y, true_features)
-			scadcv_results['fp'] += fp / n_trials
-			scadcv_results['tp'] += tp / n_trials
-		else:
-			scadcv_results = {}
-
-		# run ipss and ss methods
-		if 'ipss' in methods_to_run or 'ss' in methods_to_run:
-			results = select(X, y, ipss_args, ss_args, **select_args)
-			ipss_scores = results['ipss_efp_scores_list']
-			ss_scores = results['ss_efp_scores_list']
-
-			if plot_stability_paths:
-				import matplotlib.pyplot as plt
-				color = ['dodgerblue' if j in true_features else 'gray' for j in np.arange(X.shape[1])]
-				stability_paths = results['stability_paths']
-				n_alphas, p = stability_paths.shape
-				for j in range(p):
-					plt.plot(stability_paths[:,j], color=color[j])
-				plt.tight_layout()
-				plt.show()
-
-		# ipss results
-		if 'ipss' in methods_to_run:
-			for function in function_list:
-				for cutoff in cutoff_list:
-					for delta in delta_list:
-						efp_scores = ipss_scores[function][cutoff][delta]
-						tps, fps = tps_and_fps(efp_scores, efp_list, true_features)
-						ipss_results[function][cutoff][delta]['tp_list'] += tps / n_trials
-						ipss_results[function][cutoff][delta]['fp_list'] += fps / n_trials
-		else:
-			ipss_results = {}
-
-		# ss results
-		if 'ss' in methods_to_run:
-			for assumption in assumption_list:
-				for tau in tau_list:
-					efp_scores = ss_scores[assumption][tau]
-					tps, fps = tps_and_fps(efp_scores, efp_list, true_features)
-					ss_results[assumption][tau]['tp_list'] += tps / n_trials
-					ss_results[assumption][tau]['fp_list'] += fps / n_trials
-		else:
-			ss_results = {}
-
-	runtime = time.time() - start
-	print(f'Simulation time: {runtime:.1f} seconds ({runtime/n_trials:.1f} s/trial)')
-	print(f'')
-
-	return {'ipss_results': ipss_results, 'ss_results': ss_results, 'lassocv_results':lassocv_results, 
-		'mcpcv_results':mcpcv_results, 'scadcv_results':scadcv_results, 'simulation_config': simulation_config}
 
 #--------------------------------
 # Run simulation
