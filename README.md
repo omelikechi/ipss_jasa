@@ -1,4 +1,4 @@
-# **Supplementary Code for "Integrated Path Stability Selection" (JASA Submission)**
+# **Supplementary code for "Integrated path stability selection" (JASA submission)**
 
 ## **Important!**  
 This repository contains code for reproducing the results and figures in the paper *"Integrated Path Stability Selection,"* submitted to JASA.  
