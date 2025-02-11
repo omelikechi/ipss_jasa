@@ -5,16 +5,29 @@ to produce Figures 3, 4, and 5 in the main text and Figures S1 through S25 in th
 Supplement. In particular, this code can be used to run both the primary simulation 
 results (Section 5 and S7) as well as the sensitivity analyses (Section S8).
 
+The code is designed to be run once (e.g., 100 trials) for all of the methods and with
+different parameter choices (e.g., cutoff and delta values for IPSS and tau values for
+the stability selection methods). The results should be saved by setting save_results
+to True. These results can then be analyzed for different methods (as in Figures 4 and 
+5 in the main text and Figures S2 through S9 in the Supplement), or for different
+parameter choices, as done in the sensitivity analysis in Section S8 of the Supplement
+(Figures S10 through S25).
+
 Runtime: Running 100 trials takes between 10 minutes and 2 hours depending upon the
 dimension, p, and the base selector (lasso, SCAD, MCP, or logistic regression)
 """ 
 
+import pickle
 import time
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 from simulations.simulation_function import run_simulation
+
+################################
+save_results = False
+################################
 
 # Set random seed
 random_seed = 302
@@ -104,13 +117,12 @@ simulation_config = {
 }
 
 #--------------------------------
-# Methods and args
+# Methods specifications
 #--------------------------------
 if 'ipss' in methods_to_run or 'ss' in methods_to_run:
-	# selection probability args
 	select_args = {'B':50, 'n_alphas':25, 'selector':selector}
 
-	# ipssl args
+	# ipss args
 	ipss_args = {
 		'function_list': ['h2', 'h3'],
 		'cutoff_list': [0.025, 0.05, 0.075, 0.1],
@@ -121,15 +133,9 @@ if 'ipss' in methods_to_run or 'ss' in methods_to_run:
 	# stability selection
 	assumption_list = ['none', 'unimodal', 'r-concave']
 	tau_list = [0.6, 0.75, 0.9]
-	# q_list = {assumption: {tau: [] for tau in tau_list} for assumption in assumption_list}
-	# for assumption in assumption_list:
-	# 	for tau in tau_list:
-	# 		q_list[assumption][tau] = compute_q_list(efp_list, tau, method=assumption, p=p, B=select_args['B'])
-
 	ss_args = {
 		'assumption_list': assumption_list,
 		'efp_list': efp_list,
-		# 'q_list': q_list,
 		'tau_list': tau_list
 		}
 	simulation_config['ss_args'] = ss_args
@@ -142,6 +148,14 @@ results = run_simulation(simulation_config)
 simulation_config = results['simulation_config']
 efp_list = simulation_config['efp_list']
 
+if save_results:
+	file_name = simulation_name + '.pkl'
+	with open(file_name, 'wb') as f:
+		pickle.dump(results, f)
+
+#--------------------------------
+# Plot results
+#--------------------------------
 fig, ax = plt.subplots(1, 2, figsize=(16, 6))
 
 # lassocv results

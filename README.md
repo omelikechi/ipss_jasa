@@ -1,17 +1,44 @@
-# Supplementary code for "Integrated Path Stability Selection," submitted to JASA
+# **Supplementary Code for "Integrated Path Stability Selection" (JASA Submission)**
 
-`main.py` implements Integrated Path Stability Selection (IPSS) as well as stability selection and cross-validation methods used for comparison.  
-`helpers.py` contains helper functions for `main.py`.  
-`base_selectors.py` contains the base feature selectors used with IPSS and stability selection.
+## **Important!**  
+This repository contains code for reproducing the results and figures in the paper *"Integrated Path Stability Selection,"* submitted to JASA.  
 
-The `simulations` folder contains code for running the simulations in Section 5 of the manuscript. The main file here is `run_simulation.py`, which can be adjusted to reproduce all results in Section 5 and Sections S7 and S8 of the Supplement. 
-`generate_data.py` contains code for generating synthetic datasets used in the simulation experiments.
+For the full **Integrated Path Stability Selection (IPSS) package**, which includes expanded functionality and is designed for general use, visit: 
+[IPSS Package on GitHub](https://github.com/omelikechi/ipss)
 
-The `applications` folder contains code for reproducing the real data results in Section 6.  
-- `prostate.py` applies the methods to the prostate cancer dataset.  
-- `colon.py` applies the methods to the colon cancer dataset.
+## **Description**
+- `main.py` implements Integrated Path Stability Selection (IPSS) as well as stability selection and cross-validation methods used for comparison.  
+- `helpers.py` contains helper functions for `main.py`.  
+- `base_selectors.py` contains the base feature selectors used with IPSS and stability selection.
+- The `simulations` folder contains
+	- `figure1.py`: Reproduces Figure 1 in the paper
+	- `figure2.py`: Reproduces Figure 2 in the paper
+	- `generate_data.py`: Simulates data (Section 5 in the paper)
+	- `run_simulation.py`: Runs simulation experiments
+	- `simulation_function.py`: The main simulation function
+- The `applications` folder contains
+	- `prostate.py`: Reproduces prostate cancer results (Section 6.1)
+	- `colon.py`: Reproduces colon cancer results (Section 6.2)
 
-### **Available Datasets**
-- **RNA-sequencing data** from ovarian cancer patients: `simulations/ovarian_rnaseq.npy`
-- **Protein data** from prostate cancer patients: `applications/prostate_data.npy`
-- **Colon cancer dataset**: `applications/colon_data.npy`
+## **Available Datasets**
+This repository includes processed datasets used in the paper. The original sources are linked below:
+- RNA-sequencing (RNAseq) data from ovarian cancer patients
+	- Source: [https://www.linkedomics.org/data_download/TCGA-OV/](https://www.linkedomics.org/data_download/TCGA-OV/)
+	- Processed file: `simulations/ovarian_rnaseq.npy`
+- Reverse phase protein array (RPPA) data from prostate cancer patients 
+	- Source: [https://www.linkedomics.org/data_download/TCGA-PRAD/](https://www.linkedomics.org/data_download/TCGA-PRAD/) 
+	- Processed file: `applications/prostate_data.npy`
+- Colon cancer data:
+	- Source: [http://genomics-pubs.princeton.edu/oncology/affydata/index.html](http://genomics-pubs.princeton.edu/oncology/affydata/index.html) 
+	- Processed file: `applications/colon_data.npy`
+
+## **Additional notes**
+- Additional details about the code, including approximate runtime, are provided at the top of each script
+- Data generation involves randomness, so results may differ slightly from those in the paper
+- In the paper, regularization parameters are denoted by **λ (lambda)**, and the probability measure parameter is denoted by **α (alpha)**. However, since `lambda` is a reserved keyword in Python, the code instead uses:
+  - **α (alpha) → δ (delta)** for the probability measure parameter 
+  - **λ (lambda) → α (alpha)** for regularization parameters 
+
+
+
+
