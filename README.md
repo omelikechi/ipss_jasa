@@ -1,5 +1,7 @@
 # **Supplementary code for "Integrated path stability selection" (JASA submission)**
 
+The arXiv version of the paper: [https://arxiv.org/abs/2403.15877](https://arxiv.org/abs/2403.15877)
+
 ## **Important!**  
 This repository contains code for reproducing the results and figures in the paper *"Integrated Path Stability Selection,"* submitted to JASA.  
 
