@@ -3,18 +3,18 @@
 ## **Important!**  
 This repository contains code for reproducing the results and figures in the paper *"Integrated Path Stability Selection,"* submitted to JASA.  
 
-For the full **Integrated Path Stability Selection (IPSS) package**, which includes expanded functionality and is designed for general use, visit: 
-[IPSS Package on GitHub](https://github.com/omelikechi/ipss)
+The full **integrated path stability selection (IPSS) package**, which includes expanded functionality and is designed for general use, is 
+available here: [IPSS Package on GitHub](https://github.com/omelikechi/ipss)
 
 ## **Description**
-- `main.py` implements Integrated Path Stability Selection (IPSS) as well as stability selection and cross-validation methods used for comparison.  
-- `helpers.py` contains helper functions for `main.py`.  
-- `base_selectors.py` contains the base feature selectors used with IPSS and stability selection.
+- `main.py` implements IPSS as well as stability selection and cross-validation methods used for comparison 
+- `helpers.py` contains helper functions for `main.py`
+- `base_selectors.py` contains the base estimators used with IPSS and stability selection
 - The `simulations` folder contains
 	- `figure1.py`: Reproduces Figure 1 in the paper
 	- `figure2.py`: Reproduces Figure 2 in the paper
-	- `generate_data.py`: Simulates data (Section 5 in the paper)
-	- `run_simulation.py`: Runs simulation experiments
+	- `generate_data.py`: Simulates data (Section 5)
+	- `run_simulation.py`: Runs simulation experiments (Sections 5, S7, and S8)
 	- `simulation_function.py`: The main simulation function
 - The `applications` folder contains
 	- `prostate.py`: Reproduces prostate cancer results (Section 6.1)

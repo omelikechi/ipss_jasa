@@ -1,4 +1,4 @@
-# Helper functions for IPSS
+# Helper functions for the functions in main.py
 
 import warnings
 

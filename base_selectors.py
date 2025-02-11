@@ -1,4 +1,4 @@
-# Baseline feature selection algorithms for IPSS
+# Baseline feature selection algorithms for IPSS and stability selection
 """
 Baseline selectors based on:
 	- l1-regularized linear (lasso) or logistic regression
