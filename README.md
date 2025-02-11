@@ -4,7 +4,7 @@
 This repository contains code for reproducing the results and figures in the paper *"Integrated Path Stability Selection,"* submitted to JASA.  
 
 The full **integrated path stability selection (IPSS) package**, which includes expanded functionality and is designed for general use, is 
-available here: [IPSS Package on GitHub](https://github.com/omelikechi/ipss)
+available here: [https://github.com/omelikechi/ipss](https://github.com/omelikechi/ipss)
 
 ## **Description**
 - `main.py` implements IPSS as well as stability selection and cross-validation methods used for comparison 
