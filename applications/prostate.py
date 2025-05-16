@@ -6,14 +6,18 @@ selected by each method can change with the random seed; however, most of the pr
 the different methods are consistent across different random seeds.
 """
 
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 
-from helpers import compute_q_list, tps_and_fps
-from main import lassocv, mcpcv, scadcv, select
+from ipss.helpers import compute_q_list, tps_and_fps
+from ipss.main import lassocv, mcpcv, scadcv, select
 
 # load data
-data = np.load('./applications/prostate_data.npy', allow_pickle=True).item()
+repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+data_path = os.path.join(repo_root, 'data', 'prostate_data.npy')
+data = np.load(data_path, allow_pickle=True).item()
 X, y, feature_names = data['features'], data['response'], data['feature_names']
 n, p = X.shape
 

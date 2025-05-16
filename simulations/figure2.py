@@ -15,8 +15,8 @@ import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 import numpy as np
 
-from helpers import compute_efp_scores, stabsel_q
-from main import compute_stability_paths
+from ipss.helpers import compute_efp_scores, stabsel_q
+from ipss.main import compute_stability_paths
 from simulations.generate_data import generate_data
 
 # Set random seed

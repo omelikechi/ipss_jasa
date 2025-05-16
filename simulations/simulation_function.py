@@ -3,15 +3,17 @@
 This is the simulation function used to run all of the simulations described in
 Section 5, as well as the sensitivity analyses presented in Section S8 of the
 Supplement. The results of these simulations are shown in Figures 3, 4, 5 in the
-main text and Figures S1 through S25 in the Supplement.
+main text and Figures S1 through S27 in the Supplement.
 """ 
 
+import os
+import sys
 import time
 
 import numpy as np
 
-from helpers import compute_q_list, tps_and_fps
-from main import lassocv, mcpcv, scadcv, select
+from ipss.helpers import compute_q_list, tps_and_fps
+from ipss.main import lassocv, mcpcv, scadcv, select
 from simulations.generate_data import generate_data
 
 #--------------------------------

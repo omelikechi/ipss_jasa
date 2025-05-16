@@ -7,12 +7,14 @@ the random seed; however, many of the genes selected by the different methods ar
 across different random seeds.
 """
 
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from helpers import compute_q_list, tps_and_fps
-from main import lassocv, mcpcv, scadcv, select
+from ipss.helpers import compute_q_list, tps_and_fps
+from ipss.main import lassocv, mcpcv, scadcv, select
 
 # set random seed
 random_seed = 25
@@ -21,7 +23,9 @@ np.random.seed(random_seed)
 #--------------------------------
 # Load data
 #--------------------------------
-data = np.load('./applications/colon_data.npy', allow_pickle=True).item()
+repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+data_path = os.path.join(repo_root, 'data', 'colon_data.npy')
+data = np.load(data_path, allow_pickle=True).item()
 X, y, feature_names = data['X'], data['y'], data['feature_names']
 sorted_indices = np.argsort(y)
 y = y[sorted_indices] 

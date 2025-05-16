@@ -11,8 +11,9 @@ Runtime: Running 100 trials takes about 30 minutes on a MacBook Pro
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pickle
 
-from simulations.run_simulation import run_simulation
+from simulations.simulation_function import run_simulation
 
 # Set random seed
 random_seed = 302
@@ -23,14 +24,14 @@ np.random.seed(random_seed)
 #--------------------------------
 response_type = 'linear_reg'
 feature_matrix = 0 # standard normal features
-n_trials = 10
+n_trials = 100
 p = 1000
 n = 200
 p_true = 20
 snr = 2
 efp_list = np.linspace(0, 5, 21)
 methods_to_run = ['ss', 'lassocv']
-simulation_name = 'Figure1'
+simulation_name = 'figure1'
 
 # Store simulation details
 simulation_config = {
@@ -69,6 +70,10 @@ simulation_config['ss_args'] = ss_args
 #--------------------------------
 results = run_simulation(simulation_config)
 
+file_name = simulation_name + '_results.pkl'
+with open(file_name, 'wb') as f:
+	pickle.dump(results, f)
+
 simulation_config = results['simulation_config']
 efp_list = simulation_config['efp_list']
 
@@ -76,14 +81,14 @@ efp_list = simulation_config['efp_list']
 # Plot results
 #--------------------------------
 # plot specifications
-fig, ax = plt.subplots(1, 2, figsize=(16, 6))
+fig, ax = plt.subplots(1, 2, figsize=(16,6))
 
-linewidth = 3
+linewidth = 3.5
 
 # stability selection results
 assumption_colors = {'none':'darkorchid', 'unimodal':'deepskyblue', 'r-concave':'limegreen'}
 assumption_names = {'none':'MB', 'unimodal':'UM', 'r-concave':'r-concave'}
-tau_style = {0.6:'-', 0.75:'--', 0.9:':'}
+tau_style = {0.6:'-', 0.75:':', 0.9:'--'}
 
 ss_results = results['ss_results']
 assumptions_to_plot = ss_args['assumption_list']
@@ -109,8 +114,8 @@ linestyle = '-'
 lassocv_results = results['lassocv_results']
 fp = lassocv_results['fp']
 tp = lassocv_results['tp']
-ax[0].axhline(fp, color=color, label='LassoCV', linestyle=linestyle, lw=linewidth)
-ax[1].axhline(tp, color=color, label='LassoCV', linestyle=linestyle, lw=linewidth)
+ax[0].axhline(fp, color=color, label='lassoCV', linestyle=linestyle, lw=linewidth)
+ax[1].axhline(tp, color=color, label='lassoCV', linestyle=linestyle, lw=linewidth)
 
 # plot target E(FP)
 ax[0].plot(efp_list, efp_list, color='black', linestyle='--', lw=linewidth)
@@ -123,9 +128,13 @@ ax[0].set_xlabel('Target E(FP)', fontsize=24)
 ax[1].set_ylabel('Average TP', fontsize=24)
 ax[1].set_xlabel('Target E(FP)', fontsize=24)
 
-ax[1].legend(loc='best')
+# ax[1].legend(loc='best', fontsize=24)
+legend = ax[1].legend(loc='upper right', fontsize=14)
+for legline in legend.get_lines():
+	legline.set_linewidth(5)
 
 plt.tight_layout()
+plt.savefig('figure1.png', dpi=300)
 plt.show()
 
 print(f'')
