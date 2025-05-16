@@ -1,4 +1,4 @@
-# **Code for "Integrated path stability selection" (JASA submission)**
+# **Code for "Integrated path stability selection" (JASA)**
 
 Paper (arXiv preprint): [https://arxiv.org/abs/2403.15877](https://arxiv.org/abs/2403.15877)
 
