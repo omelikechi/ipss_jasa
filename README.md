@@ -1,6 +1,6 @@
 # **Code for "Integrated path stability selection" (JASA)**
 
-Paper (arXiv preprint): [https://arxiv.org/abs/2403.15877](https://arxiv.org/abs/2403.15877)
+Published in [*Journal of the American Statistical Association*](https://doi.org/10.1080/01621459.2025.2525589) and available on [arXiv](https://arxiv.org/abs/2403.15877)
 
 ## **Important!**  
 This repository contains code for reproducing the results and figures in the paper *"Integrated Path Stability Selection,"* submitted to JASA.  
